@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genealogia IA - Família Vital</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --border-color: #334155;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #10b981;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            padding: 16px;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        header h1 {
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+        header p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        @media (min-width: 600px) {
+            .form-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .full-width {
+                grid-column: span 2;
+            }
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.95rem;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+        .btn-success {
+            background-color: var(--success);
+        }
+        .terminal {
+            background-color: #020617;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #38bdf8;
+            max-height: 160px;
+            overflow-y: auto;
+            margin-top: 12px;
+        }
+        .nodes-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        .node-item {
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--primary);
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+        }
+        .node-item.active {
+            border-color: var(--success);
+            border-left-width: 4px;
+        }
+        .node-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .node-name {
+            font-weight: 700;
+            font-size: 1.05rem;
+        }
+        .badge {
+            background-color: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .node-details {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        pre {
+            background-color: #020617;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.8rem;
+            color: #a7f3d0;
+            border: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧬 Rastreador Genealógico - Família Vital</h1>
+            <p>Adicione familiares reais para gerar nós no formato GEDCOM X</p>
+        </header>
+
+        <div class="card">
+            <h2>➕ Adicionar Familiar na Árvore</h2>
+            <form id="familyForm" class="form-grid">
+                <div class="form-group">
+                    <label for="nome">Nome Completo (Ex: José Vital)</label>
+                    <input type="text" id="nome" placeholder="Digite o nome e sobrenome" required>
+                </div>
+                <div class="form-group">
+                    <label for="parentesco">Grau de Parentesco</label>
+                    <select id="parentesco">
+                        <option value="Pai / Mãe">Pai / Mãe</option>
+                        <option value="Avô / Avó">Avô / Avó</option>
+                        <option value="Bisavô / Bisavó">Bisavô / Bisavó</option>
+                        <option value="Tio / Tia">Tio / Tia</option>
+                        <option value="Outro Familiar">Outro Familiar</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="dataNasc">Data ou Ano de Nascimento</label>
+                    <input type="text" id="dataNasc" placeholder="Ex: 15/08/1945 ou 1945" required>
+                </div>
+                <div class="form-group">
+                    <label for="local">Cidade / Estado de Nascimento</label>
+                    <input type="text" id="local" placeholder="Ex: Altamira, Pará ou Pernambuco" required>
+                </div>
+                <div class="form-group">
+                    <label for="genero">Gênero</label>
+                    <select id="genero">
+                        <option value="Male">Masculino</option>
+                        <option value="Female">Feminino</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="statusVida">Status</label>
+                    <select id="statusVida">
+                        <option value="false">Falecido (Público no Grafo)</option>
+                        <option value="true">Vivo (Privado no Grafo)</option>
+                    </select>
+                </div>
+                <div class="full-width">
+                    <button type="submit" class="btn">Adicionar Familiar e Gerar Nó IA</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>⚙️ Console de Varredura Fonética</h2>
+            <button type="button" class="btn btn-success" onclick="simularVarredura()">Simular Cruzamento de Dados (FamilySearch IA)</button>
+            <div class="terminal" id="terminalLog">
+                > Sistema pronto. Adicione familiares acima ou inicie a varredura...
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🌳 Nós Mapeados na Linhagem (Toque para inspecionar)</h2>
+            <div class="nodes-list" id="nodesList"></div>
+        </div>
+
+        <div class="card">
+            <h2>📄 Payload GEDCOM X JSON (Estrutura da API)</h2>
+            <pre id="jsonViewer">Selecione um familiar acima para ver o código JSON...</pre>
+        </div>
+    </div>
+
+    <script>
+        let familiares = [
+            {
+                id: "MMMM-VTL",
+                nome: "Manoel Vital",
+                parentesco: "Bisavô / Bisavó",
+                dataNasc: "14 de Julho de 1882",
+                local: "Pernambuco, Brasil",
+                genero: "Male",
+                vivo: false,
+                score: "98%"
+            },
+            {
+                id: "MMMM-VT1",
+                nome: "Maria Costa Vital",
+                parentesco: "Avô / Avó",
+                dataNasc: "22 de Março de 1920",
+                local: "Pará, Brasil",
+                genero: "Female",
+                vivo: false,
+                score: "94%"
+            }
+        ];
+
+        function gerarIdAleatorio() {
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            let p1 = "", p2 = "";
+            for(let i=0; i<4; i++) p1 += chars.charAt(Math.floor(Math.random() * chars.length));
+            for(let i=0; i<3; i++) p2 += chars.charAt(Math.floor(Math.random() * chars.length));
+            return `${p1}-${p2}`;
+        }
+
+        function logTerminal(msg) {
+            const term = document.getElementById("terminalLog");
+            term.innerHTML += `<br>> ${msg}`;
+            term.scrollTop = term.scrollHeight;
+        }
+
+        function renderizarNos() {
+            const container = document.getElementById("nodesList");
+            container.innerHTML = "";
+
+            familiares.forEach((fam, index) => {
+                const div = document.createElement("div");
+                div.className = "node-item";
+                div.onclick = () => inspecionarJson(index, div);
+                div.innerHTML = `
+                    <div class="node-header">
+                        <span class="node-name">${fam.nome}</span>
+                        <span class="badge">ID: ${fam.id} | IA: ${fam.score}</span>
+                    </div>
+                    <div class="node-details">
+                        <strong>Parentesco:</strong> ${fam.parentesco} &bull; 
+                        <strong>Nasc.:</strong> ${fam.dataNasc} &bull; 
+                        <strong>Local:</strong> ${fam.local}
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function inspecionarJson(index, element) {
+            document.querySelectorAll(".node-item").forEach(el => el.classList.remove("active"));
+            if(element) element.classList.add("active");
+
+            const fam = familiares[index];
+            const partesNome = fam.nome.trim().split(" ");
+            const primeiroNome = partesNome[0] || "";
+            const sobrenome = partesNome.slice(1).join(" ") || "Vital";
+
+            const payload = {
+                persons: [
+                    {
+                        id: fam.id,
+                        living: fam.vivo,
+                        gender: { type: `http://gedcomx.org/${fam.genero}` },
+                        names: [
+                            {
+                                type: "http://gedcomx.org/BirthName",
+                                preferred: true,
+                                nameForms: [
+                                    {
+                                        fullText: fam.nome,
+                                        parts: [
+                                            { type: "http://gedcomx.org/Given", value: primeiroNome },
+                                            { type: "http://gedcomx.org/Surname", value: sobrenome }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        facts: [
+                            {
+                                id: "FACT-01",
+                                type: "http://gedcomx.org/Birth",
+                                date: { original: fam.dataNasc },
+                                place: { original: fam.local }
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            document.getElementById("jsonViewer").textContent = JSON.stringify(payload, null, 2);
+        }
+
+        document.getElementById("familyForm").addEventListener("submit", function(e) {
+            e.preventDefault();
+            const novoFamiliar = {
+                id: gerarIdAleatorio(),
+                nome: document.getElementById("nome").value,
+                parentesco: document.getElementById("parentesco").value,
+                dataNasc: document.getElementById("dataNasc").value,
+                local: document.getElementById("local").value,
+                genero: document.getElementById("genero").value,
+                vivo: document.getElementById("statusVida").value === "true",
+                score: Math.floor(Math.random() * (99 - 85 + 1) + 85) + "%"
+            };
+
+            familiares.unshift(novoFamiliar);
+            renderizarNos();
+            inspecionarJson(0, document.querySelector(".node-item"));
+            logTerminal(`Nó criado para <b>${novoFamiliar.nome}</b> (ID: ${novoFamiliar.id}).`);
+            this.reset();
+        });
+
+        function simularVarredura() {
+            logTerminal("Iniciando autenticação OAuth 2.0 no Gateway...");
+            setTimeout(() => {
+                logTerminal(`Aplicando algoritmo Double Metaphone para ${familiares.length} registros...`);
+            }, 600);
+            setTimeout(() => {
+                logTerminal("Cruzamento concluído! Registros paroquiais e civis compatíveis encontrados.");
+            }, 1400);
+        }
+
+        renderizarNos();
+        inspecionarJson(0, document.querySelector(".node-item"));
+    </script>
+</body>
+</html>
